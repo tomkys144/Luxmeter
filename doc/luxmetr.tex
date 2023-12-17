@@ -1,0 +1,248 @@
+% arara: pdflatex
+% arara: biber
+% arara: pdflatex
+% arara: pdflatex
+
+\documentclass[a4paper,10pt,titlepage]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{subcaption}
+\usepackage[czech]{babel}
+\usepackage{fontenc}
+\usepackage{graphicx}
+\usepackage[backend=biber, style=iso-numeric, urldate=comp]{biblatex}
+\usepackage[pdftex]{hyperref}
+\usepackage{url}
+\usepackage{csquotes}
+\usepackage[parfill]{parskip}
+\usepackage[version=4]{mhchem}
+\usepackage{siunitx}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{circuitikz}
+\usepackage{listings}
+\usepackage{pgfplots}
+
+\addbibresource{luxmetr.bib}
+
+\DefineBibliographyStrings{czech}{
+  url         = [Online]\addspace Dostupné z~,
+}
+
+\counterwithin{figure}{section}
+\hyphenation{zig-bee}
+\sisetup{detect-all}
+\setcounter{secnumdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\author{Tomáš Kysela}
+\title{Luxmetr}
+\date{\parbox{\linewidth}{\centering%
+  \today\endgraf\bigskip
+ Vytvořeno jako semestrální projekt pro předmět BAB34BSP\endgraf\medskip
+ FEL ČVUT}}
+
+
+
+\begin{document}
+
+\pagenumbering{Alph}
+\begin{titlepage}
+
+	\maketitle
+
+	\thispagestyle{empty}
+\end{titlepage}
+
+\pagenumbering{arabic}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\newpage
+
+\section{Úvod} \label{sec:intro}
+Cílem projektu je vytvořit funkční jednoduchý luxmetr za využítí fotorezistoru, zprácování výstupu v mikrokontroleru a zobrazení na displej. Dále je tento senzor kalibrován za využití komerčního přístroje.
+
+\section{Teoretický úvod} \label{sec:theory}
+Elektromagnetické záření je pohyb částic vyvolaných kmitáním nabitých částic, či pohybem nabitých částic ve vysokých rychlestech. Samotné světlo je poté elektromagnetické záření přibližně o vlnových délkách 380 až 740nm.~\cite{radiation}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.5\textwidth]{assets/spectrum.png}
+	\caption[Spektrum elektromagnetického záření]{Spektrum elektromagnetického záření~\cite{radiation}}
+\end{figure}
+
+\subsection{Jednotky světelné intenzity}
+\textit{Lumen} je jednotka světelného toku, definovaná jako světelný tok vyzařovaný do prostorového úhlu 1 steradiánu bodovým zdrojem, jehož svítivost je 1 kandela. Pokud tuto jednotku dáme na metr čtvereční dostáváme \textit{lux}. Běžné hodnoty luxů jsou dle tabulky~\ref{tab:lux_typical}.
+
+\begin{table}[h]
+ \centering
+ \begin{tabular}{c | c}
+  Světelné podmínky & Typické hodnoty lux \\ \hline \hline
+  Jasný den & 10000 až 25000 \\ \hline
+  Zatažený den & 1000 až 5000 \\ \hline
+  Umělé vnitřní osvětlení & 100 až 500 \\ \hline
+  Měsíční světlo & 1
+ \end{tabular}
+  \caption{Typické hodnoty lux}
+  \label{tab:lux_typical}
+\end{table}
+
+\subsection{Fotorezistor}
+Princip fotorezistoru (LDR) záleží na fotoelektrickém jevu. Foton narazí do elektronu ve valenční sféře a předá mu svoji energii, tím elektron získá dostatek energie k překonání zakázaného pásu a skočí do vodivé vrstvy. Takto uvolněné elektrony poté přispívají ke snížení elektrické odporu ve fotorezistoru. Tedy čím více světla dopadá na fotorezistor tím menší je jeho odpor.
+
+\section{Návrh luxmetru}
+Luxmetr realizujeme za využití LDR. Ten zapojíme jako napěťový dělič s pevným odporem a následujeme sledujeme úbytek napětí na LDR. K tomu využíváme Analog-To-Digital Convertor. Přečtené hodnoty napětí následně pomocí funkce získané z kalibrace za pomocí curve-fitting přepočítáme na hodnotu lux.
+
+\subsection{Hardware zapojení}
+\begin{figure}[h]
+\centering
+\resizebox{1\textwidth}{!}{%
+\begin{circuitikz}
+\tikzstyle{every node}=[font=\LARGE]
+\draw  (3.75,12.5) rectangle  node {\LARGE LDR} (6.25,10);
+\draw  (8.75,12.5) rectangle  node {\LARGE ADC} (11.25,10);
+\draw  (13.75,12.5) rectangle  node {\LARGE MCU} (16.25,10);
+\draw  (18.75,12.5) rectangle  node {\LARGE LCD} (21.25,10);
+\draw [->, >=Stealth] (6.25,11.25) .. controls (7.5,11.25) and (7.5,11.25) .. (8.75,11.25);
+\draw [->, >=Stealth] (11.25,11.25) .. controls (12.5,11.25) and (12.5,11.25) .. (13.75,11.25);
+\draw [->, >=Stealth] (16.25,11.25) .. controls (17.5,11.25) and (17.5,11.25) .. (18.75,11.25);
+\end{circuitikz}
+}%
+\caption{Logické zapojení prvků}
+\label{fig:my_label}
+\end{figure}
+
+
+\begin{figure}[h]
+ \centering
+  \begin{subfigure}{0.4\textwidth}
+   \centering
+   \includegraphics[height=10cm]{assets/ldr.png}
+   \caption{Zapojení fotorezistoru}
+  \end{subfigure}
+  \begin{subfigure}{0.4\textwidth}
+   \centering
+   \includegraphics[height=10cm]{assets/lcd.png}
+   \caption{Zapojení LCD}
+  \end{subfigure}
+  \caption{Zapojení jednotlivých prvků projektu}
+\end{figure}
+
+\begin{table}[h]
+ \centering
+ \begin{tabular}{c || c | c }
+  Součástka & počet & cena/kus \\ \hline \hline
+  STM32 Nucleo-G441RE & 1 & 363 Kč \\ \hline
+  TRIMMER 64 P 10K CN 250ppm & 1 & 14 Kč \\ \hline
+  fotorezistor GL5516 & 1 & 7 Kč \\ \hline
+  rezistor 5.1 \si{\kilo\ohm} & 1 & 4 Kč \\ \hline
+  rezistor 470 \si{\ohm} & 1 & 4 Kč \\ \hline
+  DM1602AB alfanumerický LCD & 1 & 85 Kč
+ \end{tabular}
+  \caption{Seznam použitých součástek}
+\end{table}
+
+
+\subsection{Software zpracování}
+V software vyžíváme předgenerované prostředí z STM32 CUBE IDE. Následně doplníme logiku kde pravidelně spouštíme ADC konverzi, následně přečteme hodnotu, převedeme na napětí a z napětí přepočítáme na luxy, který následně zobrazíme.
+
+\begin{lstlisting}[language=c, breaklines=true]
+ int main(void)
+{
+  char txt[30];
+  uint16_t adc_raw;
+  uint32_t lux;
+  float voltage;
+
+  Lcd_PortType ports[] = {D4_GPIO_Port, D5_GPIO_Port, D6_GPIO_Port, D7_GPIO_Port};
+  Lcd_PinType pins[] = {D4_Pin, D5_Pin, D6_Pin, D7_Pin};
+
+  Lcd_HandleTypeDef lcd = Lcd_create(ports, pins, RS_GPIO_Port, RS_Pin, EN_GPIO_Port, EN_Pin, LCD_4_BIT_MODE);
+
+  while (1)
+  {
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_PollForConversion(&hadc1, 100);
+	adc_raw = HAL_ADC_GetValue(&hadc1);
+	HAL_ADC_Stop(&hadc1);
+
+	voltage = ((double) adc_raw / 4096) * 3.3;
+
+	lux = LUX_SCALAR * pow(voltage, LUX_EXPONENT);
+
+	sprintf(txt, "%ld lux", lux);
+	Lcd_clear(&lcd);
+	Lcd_cursor(&lcd, 0, 0);
+	Lcd_string(&lcd, txt);
+
+	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	HAL_Delay(500);
+  }
+}
+\end{lstlisting}
+
+\subsection{Curve fitting}
+Vzhledem k naměřeným hodnotám jsme vypozorovali přibližně logaritmickou závislost. Tedy jsme jak naměřené hodnoty, tak napětí zlogaritmovali dekadickým logaritmem, tedy jsme dostali rovnici \ref{eq:log}, kde $y$ jsou naměřené luxy a $x$ naměřené napětí.
+\begin{equation}
+ \label{eq:log}
+ \log_{10}{y} = m \log_{10}{x} + c
+\end{equation}
+
+Tu jsme následně aproximovali a následně převedli na rovnci \ref{eq:fin}.
+\begin{equation}
+ \label{eq:fin}
+ y = x^m \cdot 10^c = x^m \cdot a
+\end{equation}
+Výsledné hodnoty jsou poté $m = -1.974$ a $a = 48.842$.
+
+\begin{figure}[h]
+ \centering
+\begin{tikzpicture}
+ \begin{axis}[
+    axis lines = left,
+    xlabel = {Napětí [\si{\volt}]},
+    ylabel = {Světelný tok [\si{\lux}]},
+    samples=100,
+    xmin=0,
+    xmax=4,
+    ymin=0,
+    ymax=15000,
+]
+  \addplot[color=red,domain=0.01:4]{48.824 * x ^ (-1.974)};
+  \addlegendentry{Aproximovaná funkce}
+
+  \addplot[color=blue,mark=x, only marks] coordinates {
+  (0.02, 12800)
+  (0.05, 13500)
+  (0.13, 11870)
+  (0.45, 731)
+  (0.74, 321)
+  (0.82, 301)
+  (0.83, 285)
+  (1.49, 36)
+  (1.5, 36)
+  (1.53, 35)
+  (2.41, 2)
+  (2.42, 1)
+  (2.42, 1)
+  };
+  \addlegendentry{Naměřené hodnoty}
+ \end{axis}
+
+\end{tikzpicture}
+
+\end{figure}
+
+\section{Závěr}
+Úspěšně jsme sestavili luxmetr, kalibrovali ho na rozsahu 0 až 14000 lx. Výsledné hodnoty úspěšně zobrazujeme na LCD alfanumerickém displeji.
+\section{Zdroje}
+\nocite{*}
+\printbibliography[heading=none]
+\end{document}
