@@ -13,4 +13,5 @@ jobs:
           scheme: small
           run: |
             cd doc
+            tlmgr install arara
             arara luxmetr.tex
