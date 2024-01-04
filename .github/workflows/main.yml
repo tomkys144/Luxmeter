@@ -2,7 +2,7 @@ name: Build TeX
 on: [push]
 jobs:
   build_latex:
-    runs-on: ubunutu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
