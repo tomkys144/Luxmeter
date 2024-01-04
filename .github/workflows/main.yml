@@ -1,0 +1,12 @@
+on: push
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: paolobrasolin/setup-texlive-action@v1
+        with:
+          profile-path: ${{ github.workspace }}/.github/texlive.profile
+          packages-path: ${{ github.workspace }}/.github/texlive.packages
+      - run: |
+          cd docs
+          arara luxmetr.tex
